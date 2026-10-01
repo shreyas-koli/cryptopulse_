@@ -10,3 +10,4 @@ logs/*.log
 
 # Local generated data
 data/processed/
+datasets/

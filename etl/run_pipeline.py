@@ -1,44 +1,56 @@
-import subprocess
-import sys
-
-
-def run_step(step_name, command):
-    """
-    Run one ETL step and display its status.
-    """
-
-    print(f"\nStarting {step_name}...")
-
-    result = subprocess.run(command)
-
-    if result.returncode != 0:
-        print(f"{step_name} failed.")
-        sys.exit(1)
-
-    print(f"{step_name} completed successfully.")
+from etl.extract import extract_data
+from etl.transform import transform_data
+from etl.load import create_table, load_data
 
 
 def main():
     """
-    Run the complete ETL pipeline.
+    Run the complete CryptoPulse-BI ETL pipeline.
     """
 
-    run_step(
-        "Extraction",
-        [sys.executable, "-m", "etl.extract"]
+    print("\n========== CRYPTOPULSE-BI ETL PIPELINE ==========")
+
+    # -------------------------------------------------
+    # 1. Create database table
+    # -------------------------------------------------
+
+    print("\n[1/4] Checking database table...")
+
+    create_table()
+
+    print("Database table ready.")
+
+    # -------------------------------------------------
+    # 2. Extract
+    # -------------------------------------------------
+
+    print("\n[2/4] Extracting data from CoinMarketCap...")
+
+    data = extract_data(limit=3)
+
+    print(
+        f"Successfully extracted {len(data)} cryptocurrencies."
     )
 
-    run_step(
-        "Transformation",
-        [sys.executable, "-m", "etl.transform"]
-    )
+    # -------------------------------------------------
+    # 3. Transform
+    # -------------------------------------------------
 
-    run_step(
-        "Loading",
-        [sys.executable, "-m", "etl.load"]
-    )
+    print("\n[3/4] Transforming cryptocurrency data...")
 
-    print("\nComplete ETL pipeline executed successfully.")
+    transformed_data = transform_data(data)
+
+    print("Transformation completed successfully.")
+
+    # -------------------------------------------------
+    # 4. Load
+    # -------------------------------------------------
+
+    print("\n[4/4] Loading data into PostgreSQL...")
+
+    load_data(transformed_data)
+
+    print("\n========== PIPELINE COMPLETED ==========")
 
 
 if __name__ == "__main__":

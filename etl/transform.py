@@ -1,58 +1,85 @@
 import pandas as pd
 
 
-def transform_data(df):
-    print("Available columns before cleaning:")
-    print(df.columns.tolist())
+def transform_data(data):
+    """
+    Transform raw cryptocurrency data received from CoinMarketCap API.
+    """
 
-    # Create a copy of the original DataFrame
-    transformed_df = df.copy()
+    transformed_records = []
 
-    # Remove extra spaces from column names
-    transformed_df.columns = transformed_df.columns.str.strip()
+    for coin in data:
+        # Get the USD market data from the API response
+        usd_data = coin["quote"][0]
 
-    print("Available columns after cleaning:")
-    print(transformed_df.columns.tolist())
+        record = {
+            "name": coin["name"],
+            "symbol": coin["symbol"],
+            "rank": coin["cmc_rank"],
+            "price_usd": usd_data["price"],
+            "market_cap": usd_data["market_cap"],
+            "volume_24h": usd_data["volume_24h"],
+            "percent_change_24h": usd_data["percent_change_24h"]
+        }
 
-    # Convert price and market cap into numeric values
-    transformed_df["price_usd"] = pd.to_numeric(
-        transformed_df["price_usd"],
-        errors="coerce"
-    )
+        transformed_records.append(record)
 
-    transformed_df["market_cap"] = pd.to_numeric(
-        transformed_df["market_cap"],
-        errors="coerce"
-    )
+    # Convert the list of records into a DataFrame
+    transformed_df = pd.DataFrame(transformed_records)
 
-    # Remove rows containing missing values
+    print("\nData after extracting required fields:")
+    print(transformed_df)
+
+    # Convert numeric columns
+    numeric_columns = [
+        "rank",
+        "price_usd",
+        "market_cap",
+        "volume_24h",
+        "percent_change_24h"
+    ]
+
+    for column in numeric_columns:
+        transformed_df[column] = pd.to_numeric(
+            transformed_df[column],
+            errors="coerce"
+        )
+
+    # Remove rows containing required missing values
     transformed_df = transformed_df.dropna(
-        subset=["name", "symbol", "price_usd", "market_cap"]
+        subset=[
+            "name",
+            "symbol",
+            "rank",
+            "price_usd",
+            "market_cap"
+        ]
     )
 
+    # Keep only valid positive values
     transformed_df = transformed_df[
-        (transformed_df["price_usd"] > 0)
+        (transformed_df["rank"] > 0)
+        & (transformed_df["price_usd"] > 0)
         & (transformed_df["market_cap"] > 0)
     ]
 
+    # Convert market cap into billions
     transformed_df["market_cap_billion"] = (
-        transformed_df["market_cap"]/1_000_000_000
+        transformed_df["market_cap"] / 1_000_000_000
     )
 
     return transformed_df
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/raw/sample_crypto.csv")
+    from etl.extract import extract_data
 
-    transformed_data = transform_data(df)
+    # Extract real data from CoinMarketCap
+    data = extract_data(limit=3)
 
-    transformed_data.to_csv(
-        "data/processed/transformed_crypto.csv",
-        index=False
-    )
+    # Transform the API data
+    transformed_data = transform_data(data)
 
-
-    print("Transformation completed successfully.")
-    print("Saved file: data/processed/transformed_crypto.csv")
+    print("\nTransformation completed successfully.")
+    print("\nFinal transformed data:")
     print(transformed_data)
