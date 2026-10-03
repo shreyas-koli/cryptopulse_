@@ -2,5 +2,8 @@
     "project":{
         "name":"CryptoPulse-BI",
         "version": "Mark1"
+    },
+    "scheduler":{
+        "interval_minutes":1
     }
 }

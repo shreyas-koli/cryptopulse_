@@ -14,5 +14,6 @@ with open(CONFIG_FILE, "r") as file:
 # print(CONFIG["project"]["name"])
 
 # print(ENVIRONMENT)
+SCHEDULER_INTERVAL_MINUTES = CONFIG["scheduler"]["interval_minutes"]
 
 
